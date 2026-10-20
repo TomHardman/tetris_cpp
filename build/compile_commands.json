@@ -1,0 +1,32 @@
+[
+{
+  "directory": "/Users/tomhardman/Documents/Projects/tetris_cpp/build",
+  "command": "/usr/bin/c++   -std=gnu++2b -arch arm64 -o CMakeFiles/Experimentation.dir/experimentation.cpp.o -c /Users/tomhardman/Documents/Projects/tetris_cpp/experimentation.cpp",
+  "file": "/Users/tomhardman/Documents/Projects/tetris_cpp/experimentation.cpp",
+  "output": "CMakeFiles/Experimentation.dir/experimentation.cpp.o"
+},
+{
+  "directory": "/Users/tomhardman/Documents/Projects/tetris_cpp/build",
+  "command": "/usr/bin/c++   -std=gnu++2b -arch arm64 -o CMakeFiles/ExperimentationStdIn.dir/experimentationStdIn.cpp.o -c /Users/tomhardman/Documents/Projects/tetris_cpp/experimentationStdIn.cpp",
+  "file": "/Users/tomhardman/Documents/Projects/tetris_cpp/experimentationStdIn.cpp",
+  "output": "CMakeFiles/ExperimentationStdIn.dir/experimentationStdIn.cpp.o"
+},
+{
+  "directory": "/Users/tomhardman/Documents/Projects/tetris_cpp/build",
+  "command": "/usr/bin/c++   -std=gnu++2b -arch arm64 -o CMakeFiles/tetris.dir/tetris.cpp.o -c /Users/tomhardman/Documents/Projects/tetris_cpp/tetris.cpp",
+  "file": "/Users/tomhardman/Documents/Projects/tetris_cpp/tetris.cpp",
+  "output": "CMakeFiles/tetris.dir/tetris.cpp.o"
+},
+{
+  "directory": "/Users/tomhardman/Documents/Projects/tetris_cpp/build",
+  "command": "/usr/bin/c++   -std=gnu++2b -arch arm64 -o CMakeFiles/tetris.dir/game.cpp.o -c /Users/tomhardman/Documents/Projects/tetris_cpp/game.cpp",
+  "file": "/Users/tomhardman/Documents/Projects/tetris_cpp/game.cpp",
+  "output": "CMakeFiles/tetris.dir/game.cpp.o"
+},
+{
+  "directory": "/Users/tomhardman/Documents/Projects/tetris_cpp/build",
+  "command": "/usr/bin/c++   -std=gnu++2b -arch arm64 -o CMakeFiles/tetris.dir/components.cpp.o -c /Users/tomhardman/Documents/Projects/tetris_cpp/components.cpp",
+  "file": "/Users/tomhardman/Documents/Projects/tetris_cpp/components.cpp",
+  "output": "CMakeFiles/tetris.dir/components.cpp.o"
+}
+]

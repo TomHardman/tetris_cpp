@@ -1,0 +1,1 @@
+/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/tetris.dir/tetris.cpp.o CMakeFiles/tetris.dir/game.cpp.o CMakeFiles/tetris.dir/components.cpp.o -o tetris
