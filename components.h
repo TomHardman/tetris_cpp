@@ -10,6 +10,10 @@
 using Position = std::pair<int, int>;
 constexpr Position START_POS = {5, 0};
 
+inline std::string to_string(Position p) {
+    return "(" + std::to_string(p.first) + "," + std::to_string(p.second) + ")";
+}
+
 struct Offsets {
     std::array<Position, 3> offsets_;
 

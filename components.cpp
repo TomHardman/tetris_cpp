@@ -1,8 +1,6 @@
 #include "components.h"
-#include <chrono>
-#include <thread>
+
 #include <utility>
-#include <iostream>
 #include <string>
 #include "logging.h"
 
@@ -156,14 +154,7 @@ int Board::clearFilled() {
             top++;
         }
     }
-    // top = lines cleared
-    switch (top) {
-        case 1: return 100;
-        case 2: return 200;
-        case 3: return 300;
-        case 4: return 400;
-        default: return 0;
-    }
+    return top; // top = lines cleared
 }
 
 std::string Board::renderWithTetromino(const std::optional<Tetromino> tetromino) const {
@@ -171,7 +162,7 @@ std::string Board::renderWithTetromino(const std::optional<Tetromino> tetromino)
     std::array<std::array<int, N>, M> boardCopy = board_;
 
     if (tetromino.has_value()) {
-        LOG("Rendering with tetromino");
+        LOG("Rendering with tetromino at position " + to_string((*tetromino).position_));
         Position centre = (*tetromino).position_;
         boardCopy[centre.second][centre.first] = 2;
         for (Position offset : (*tetromino).offsets_) {

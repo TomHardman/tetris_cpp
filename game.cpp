@@ -1,5 +1,6 @@
 #include "game.h"
 #include <atomic>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <chrono>
@@ -10,11 +11,9 @@
 #include "logging.h"
 #include <iostream>
 
-Game::Game(int inputFreq) 
-    : rng_(std::random_device{}()) 
+Game::Game(bool sandboxMode) 
+    : rng_(std::random_device{}()), sandboxMode_(sandboxMode)
 {
-    inputPeriodMs_ = 1000 / inputFreq;
-
     // allow us to use stdin to receive game input
     tcgetattr(STDIN_FILENO, &*old_settings_);
     termios new_settings = *old_settings_;
@@ -32,7 +31,7 @@ void Game::step() {
     if (!liveTetromino_.has_value()) {
         LOG("Spawning new tetromino");
         Tetromino spawningTetromino = createTetromino(START_POS);
-        LOG("Spawned tetromino")
+        LOG("Spawned tetromino at position " + std::to_string(spawningTetromino.position_.first) + "," + std::to_string(spawningTetromino.position_.second));
         liveTetromino_ = board_.tryEmplace(spawningTetromino);
         if (!liveTetromino_.has_value()) {
             gameOverFlag_.store(true, std::memory_order_release);
@@ -45,10 +44,12 @@ void Game::step() {
                 board_.lockPieceIntoBoard(*liveTetromino_);
                 LOG("Clearing tetromino");
                 liveTetromino_.reset();
-                score_ += board_.clearFilled();
-                level_ = 1 + score_ / 1000;
-                double gravityPeriodS = std::pow((0.8 - (level_ - 1) * 0.007), level_ - 1);
-                gravityPeriodMs_ = gravityPeriodS * 1000;
+                
+                int linesCleared = board_.clearFilled();
+                totLinesCleared_ += linesCleared;
+                score_ += calculateScore(linesCleared);
+                updateLevel();
+                updateGravity();
                 return;
             }
             // by applying gravity after lock check
@@ -58,36 +59,48 @@ void Game::step() {
     }
 }
 
+int Game::calculateScore(int linesCleared) const{
+    int baseScore;
+    try {
+        baseScore = SCORE_BY_LINES_CLEARED.at(linesCleared);
+    } catch(std::out_of_range) {
+        throw std::runtime_error("Lines cleared must be between 0 and 4");
+    }
+    return level_ * baseScore;
+}
+
 void Game::render() {
     std::string boardRender = board_.renderWithTetromino(liveTetromino_);
     std::cout << "\033[2J";  // Clear screen
     std::cout << "\033[H";   // Move cursor home
     std::cout << boardRender;
-    std::cout << "Score: " << score_ << "\n";
-    std::cout << "Level:" << level_ << "\n";
+    std::cout << "Score: " << score_ << std::endl;
+    std::cout << "Lines Cleared: " << totLinesCleared_ << std::endl;
+    std::cout << "Level:" << level_ << std::endl;
     std::cout << std::endl;
     std::cout.flush();
 }
 
-long long Game::nowMs() {
+long long Game::nowMs() const {
     using namespace std::chrono;
      return duration_cast<milliseconds>(
         system_clock::now().time_since_epoch()
     ).count();
 }
 
-bool Game::canApplyAction() {
+bool Game::canApplyAction() const {
     return nowMs() > lastActionTimeMs_ + inputPeriodMs_;
 }
 
 void Game::inputLoop() {
+    LOG("Beginning input loop")
     while(!gameOverFlag_.load(std::memory_order_acquire)) { // need to fully understand this
         char c;
         read(STDIN_FILENO, &c, 1);
         LOG("Received keypress " + std::string{c})
         if (!canApplyAction()) continue;
         
-        LOG("Applying action for keypress " + std::string{c});
+        LOG("Attempting to apply action for keypress " + std::string{c});
         switch(c) {
             case 'a':
                 applyAction(Action::Left);
@@ -104,6 +117,9 @@ void Game::inputLoop() {
             case 'q':
                 applyAction(Action::Quit);
                 break;
+            case 'u':
+                if (sandboxMode_) applyAction(Action::IncreaseLevel);
+                break;
             default: //noop
         }
         lastActionTimeMs_ = nowMs();
@@ -112,6 +128,7 @@ void Game::inputLoop() {
 }
 
 void Game::gravityLoop() {
+    LOG("Beginning gravity loop");
     while(!gameOverFlag_) {
         this->step();
         this->render();
@@ -119,7 +136,17 @@ void Game::gravityLoop() {
     }
 }
 
+void Game::updateGravity() {
+    double gravityPeriodS = std::pow((0.8 - (level_ - 1) * 0.007), level_ - 1);
+    gravityPeriodMs_ = gravityPeriodS * 1000;
+}
+
+void Game::updateLevel() {
+    level_ = baseLevel_ + totLinesCleared_ / 10;
+}
+
 void Game::play() {
+    LOG("Starting game")
     std::thread input(&Game::inputLoop, this);
     std::thread play(&Game::gravityLoop, this);
     input.join();
@@ -157,6 +184,10 @@ void Game::applyAction(Action action) {
         case Action::Quit :
             gameOverFlag_.store(true, std::memory_order_release);
             break;
+        case Action::IncreaseLevel :
+            baseLevel_ += 1;
+            updateLevel();
+            updateGravity();
         default: //noop
     }
 }
