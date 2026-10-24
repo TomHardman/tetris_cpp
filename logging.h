@@ -15,7 +15,7 @@ inline std::string getTimeString() {
 }
 
 #define LOG(...) do {\
-    logfile << __FILE__ << ":" << __LINE__ << ": " << getTimeString() << ":";\
+    logfile << __FILE__ << ":" << __LINE__ << ": " << getTimeString() << " ";\
     logfile << __VA_ARGS__ << "\n";\
     logfile.flush(); \
 } while (0);
