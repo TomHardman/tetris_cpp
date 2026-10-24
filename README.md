@@ -1,4 +1,4 @@
-Tetris playable in terminal written in C++
+Tetris playable in terminal written in C++.
 Written entirely by hand
 
 Usage: tetris [OPTIONS]
