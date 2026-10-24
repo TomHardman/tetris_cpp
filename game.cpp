@@ -41,7 +41,7 @@ void Game::step() {
     }
     else {
             if (board_.fallBlocked(*liveTetromino_)){
-                LOG("Locking piece and clearing rows");
+                LOG("Locking piece and clearing filled rows");
                 board_.lockPieceIntoBoard(*liveTetromino_);
                 LOG("Clearing tetromino");
                 liveTetromino_.reset();
@@ -49,6 +49,7 @@ void Game::step() {
                 level_ = 1 + score_ / 1000;
                 double gravityPeriodS = std::pow((0.8 - (level_ - 1) * 0.007), level_ - 1);
                 gravityPeriodMs_ = gravityPeriodS * 1000;
+                return;
             }
             // by applying gravity after lock check
             // player has one tick to perform movement/rotation
@@ -58,7 +59,7 @@ void Game::step() {
 }
 
 void Game::render() {
-    std::string boardRender = board_.renderWithTetromino(*liveTetromino_);
+    std::string boardRender = board_.renderWithTetromino(liveTetromino_);
     std::cout << "\033[2J";  // Clear screen
     std::cout << "\033[H";   // Move cursor home
     std::cout << boardRender;
@@ -86,7 +87,7 @@ void Game::inputLoop() {
         LOG("Received keypress " + std::string{c})
         if (!canApplyAction()) continue;
         
-        LOG("Applying action " + std::string{c});
+        LOG("Applying action for keypress " + std::string{c});
         switch(c) {
             case 'a':
                 applyAction(Action::Left);

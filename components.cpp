@@ -4,7 +4,7 @@
 #include <utility>
 #include <iostream>
 #include <string>
-#include <thread>
+#include "logging.h"
 
 void Tetromino::rotatePointClockwise(Position& point) {
         int dx = point.first;
@@ -166,15 +166,21 @@ int Board::clearFilled() {
     }
 }
 
-std::string Board::renderWithTetromino(const Tetromino& tetromino) const {
+std::string Board::renderWithTetromino(const std::optional<Tetromino> tetromino) const {
     std::string result;
     std::array<std::array<int, N>, M> boardCopy = board_;
 
-    Position centre = tetromino.position_;
-    boardCopy[centre.second][centre.first] = 2;
-    for (Position offset : tetromino.offsets_) {
-        Position pos  = {centre.first + offset.first, centre.second + offset.second};
-        boardCopy[pos.second][pos.first] = 2;
+    if (tetromino.has_value()) {
+        LOG("Rendering with tetromino");
+        Position centre = (*tetromino).position_;
+        boardCopy[centre.second][centre.first] = 2;
+        for (Position offset : (*tetromino).offsets_) {
+            Position pos  = {centre.first + offset.first, centre.second + offset.second};
+            boardCopy[pos.second][pos.first] = 2;
+        }
+    }
+    else {
+        LOG("Rendering without tetromino");
     }
 
     for (const auto& row : boardCopy) {

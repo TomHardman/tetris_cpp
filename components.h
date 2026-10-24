@@ -60,6 +60,6 @@ class Board {
         Tetromino& tryRotateAntiClockwise(Tetromino& tetromino) const;
         Tetromino& tryTranslate(Tetromino& tetromino, int dx, int dy) const;
         int clearFilled();
-        std::string renderWithTetromino(const Tetromino& tetromino) const;
+        std::string renderWithTetromino(const std::optional<Tetromino> tetromino) const;
 };
 
