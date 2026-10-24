@@ -22,7 +22,7 @@ class Game {
         int score_{};
         int level_ = 1;
         int inputPeriodMs_;
-        int gravityPeriodMs_ = 400;
+        int gravityPeriodMs_ = 1000;
         long long lastActionTimeMs_;
         std::mt19937 rng_;
         std::optional<termios> old_settings_;

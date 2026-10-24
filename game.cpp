@@ -30,7 +30,9 @@ Game::~Game() {
 
 void Game::step() {
     if (!liveTetromino_.has_value()) {
+        LOG("Spawning new tetromino");
         Tetromino spawningTetromino = createTetromino(START_POS);
+        LOG("Spawned tetromino")
         liveTetromino_ = board_.tryEmplace(spawningTetromino);
         if (!liveTetromino_.has_value()) {
             gameOverFlag_.store(true, std::memory_order_release);
@@ -39,14 +41,18 @@ void Game::step() {
     }
     else {
             if (board_.fallBlocked(*liveTetromino_)){
+                LOG("Locking piece and clearing rows");
                 board_.lockPieceIntoBoard(*liveTetromino_);
+                LOG("Clearing tetromino");
                 liveTetromino_.reset();
                 score_ += board_.clearFilled();
                 level_ = 1 + score_ / 1000;
-                gravityPeriodMs_ = std::pow((0.8 - (level_ - 1) * 0.007), level_ - 1);
+                double gravityPeriodS = std::pow((0.8 - (level_ - 1) * 0.007), level_ - 1);
+                gravityPeriodMs_ = gravityPeriodS * 1000;
             }
             // by applying gravity after lock check
             // player has one tick to perform movement/rotation
+            LOG("Apply gravity")
             board_.tryTranslate(*liveTetromino_, 0, 1);
     }
 }
