@@ -151,6 +151,7 @@ int Board::clearFilled() {
         if (rowFilled(rowIdx)){
             clearRow(rowIdx);
             shiftRowsDown(rowIdx);
+            rowIdx++; // consider row that has just been shifted
             top++;
         }
     }
