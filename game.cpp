@@ -1,24 +1,26 @@
 #include "game.h"
 #include <atomic>
+#include <string>
 #include <thread>
 #include <chrono>
 #include <termios.h>
 #include <unistd.h>
 #include <random>
 #include "tetrominos.h"
+#include "logging.h"
 #include <iostream>
 
-Game::Game(int frameLengthMs, int ticksPerGravTick) : 
-    frameLengthMs_(frameLengthMs), 
-    ticksPerGravTick_(ticksPerGravTick),
-    rng_(std::random_device{}()) {
-    tcgetattr(STDIN_FILENO, &*old_settings_);
+Game::Game(int inputFreq) 
+    : rng_(std::random_device{}()) 
+{
+    inputPeriodMs_ = 1000 / inputFreq;
 
+    // allow us to use stdin to receive game input
+    tcgetattr(STDIN_FILENO, &*old_settings_);
     termios new_settings = *old_settings_;
     new_settings.c_lflag &= ~(ICANON | ECHO);
     new_settings.c_cc[VMIN] = 1;
     new_settings.c_cc[VTIME] = 0;
-
     tcsetattr(STDIN_FILENO, TCSANOW, &new_settings);
 }
 
@@ -36,77 +38,83 @@ void Game::step() {
         }
     }
     else {
-        Action action;
-        {
-            std::lock_guard<std::mutex> lock(actionMtx_);
-            action = actionBuffer_;
-            actionBuffer_ = Action::None;
-        }
-        applyAction(action);
-        if (modTickCount_ == 0) { 
-            // this is a gravity tick
             if (board_.fallBlocked(*liveTetromino_)){
                 board_.lockPieceIntoBoard(*liveTetromino_);
                 liveTetromino_.reset();
                 score_ += board_.clearFilled();
+                level_ = 1 + score_ / 1000;
+                gravityPeriodMs_ = std::pow((0.8 - (level_ - 1) * 0.007), level_ - 1);
             }
             // by applying gravity after lock check
-            // player has one tick to perform any final rotations
+            // player has one tick to perform movement/rotation
             board_.tryTranslate(*liveTetromino_, 0, 1);
-        }
     }
-    modTickCount_ ++;
-    modTickCount_ = modTickCount_ % ticksPerGravTick_;
 }
 
 void Game::render() {
     std::string boardRender = board_.renderWithTetromino(*liveTetromino_);
     std::cout << "\033[2J";  // Clear screen
     std::cout << "\033[H";   // Move cursor home
-    std::cout << "Score: " << score_ << "\n";
     std::cout << boardRender;
+    std::cout << "Score: " << score_ << "\n";
+    std::cout << "Level:" << level_ << "\n";
     std::cout << std::endl;
     std::cout.flush();
+}
+
+long long Game::nowMs() {
+    using namespace std::chrono;
+     return duration_cast<milliseconds>(
+        system_clock::now().time_since_epoch()
+    ).count();
+}
+
+bool Game::canApplyAction() {
+    return nowMs() > lastActionTimeMs_ + inputPeriodMs_;
 }
 
 void Game::inputLoop() {
     while(!gameOverFlag_.load(std::memory_order_acquire)) { // need to fully understand this
         char c;
         read(STDIN_FILENO, &c, 1);
-        std::lock_guard<std::mutex> lock(actionMtx_);
-        if (!(actionBuffer_==Action::None)) return;
+        LOG("Received keypress " + std::string{c})
+        if (!canApplyAction()) continue;
+        
+        LOG("Applying action " + std::string{c});
         switch(c) {
             case 'a':
-                actionBuffer_ = Action::Left;
+                applyAction(Action::Left);
                 break;
             case 'd':
-                actionBuffer_ = Action::Right;
+                applyAction(Action::Right);
                 break;
             case 's':
-                actionBuffer_ = Action::RotateCW;
+                applyAction(Action::RotateCW);
                 break;
             case 'w':
-                actionBuffer_ = Action::RotateACW;
+                applyAction(Action::RotateACW);
                 break;
             case 'q':
-                actionBuffer_ = Action::Quit;
+                applyAction(Action::Quit);
                 break;
             default: //noop
         }
+        lastActionTimeMs_ = nowMs();
+        render();
     }
 }
 
-void Game::playLoop() {
+void Game::gravityLoop() {
     while(!gameOverFlag_) {
         this->step();
         this->render();
-        std::this_thread::sleep_for(std::chrono::milliseconds(frameLengthMs_));
+        std::this_thread::sleep_for(std::chrono::milliseconds(gravityPeriodMs_));
     }
 }
 
 void Game::play() {
     std::thread input(&Game::inputLoop, this);
-    std::thread play(&Game::playLoop, this);
+    std::thread play(&Game::gravityLoop, this);
     input.join();
     play.join();
 }
